@@ -133,23 +133,3 @@ confidence percentage.
 
 ---
 
-## Possible viva questions to prepare for
-- **Why Logistic Regression as primary model?** It's simple, fast, highly
-  interpretable (feature coefficients show which signals matter most),
-  and a strong baseline for binary classification.
-- **Why scale features?** Logistic Regression's gradient descent converges
-  faster and more reliably when features share a similar scale; unscaled
-  large-magnitude features (like URL length) would dominate the decision
-  boundary otherwise. Random Forest doesn't strictly need scaling, but
-  applying it uniformly keeps the pipeline consistent for both models.
-- **Why stratified split?** To ensure both train and test sets keep the
-  same phishing/legitimate ratio as the full dataset — important for a
-  ~50/50 class problem so evaluation metrics aren't skewed.
-- **Why compare Precision and Recall separately, not just Accuracy?** In
-  phishing detection, missing a real phishing site (false negative) is
-  far more costly than a false alarm — Recall matters more in practice,
-  even though for this balanced dataset accuracy alone already tells a
-  clear story.
-- **How would this scale to real URLs?** In production, features would be
-  extracted live via URL parsing, WHOIS lookups (domain age/registration),
-  and DNS queries rather than hand-entered.
