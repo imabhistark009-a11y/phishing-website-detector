@@ -234,29 +234,34 @@ if st.button("🔍 Predict"):
     # Gauge color scales from green (safe) to red (risky) based on probability
     gauge_color = "#e74c3c" if proba >= 0.5 else "#2ecc71"
 
-    gauge_html = f"""
-    <div class="gauge-track">
-        <div class="gauge-fill" style="width:{gauge_pct}%; background-color:{gauge_color};"></div>
-    </div>
-    """
+    # NOTE: no leading indentation on these lines -- Markdown treats 4+ leading
+    # spaces as a code block, which was causing stray closing tags (like
+    # "</div>") to render as literal visible text instead of real HTML.
+    gauge_html = (
+        f'<div class="gauge-track">'
+        f'<div class="gauge-fill" style="width:{gauge_pct}%; background-color:{gauge_color};"></div>'
+        f'</div>'
+    )
 
     if prediction == 1:
-        st.markdown(f"""
-        <div class="result-danger">
-            <h3>⚠️ Likely PHISHING website</h3>
-            <p>Predicted phishing probability: <b>{proba:.1%}</b></p>
-            {gauge_html}
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="result-danger">'
+            f'<h3>⚠️ Likely PHISHING website</h3>'
+            f'<p>Predicted phishing probability: <b>{proba:.1%}</b></p>'
+            f'{gauge_html}'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
         st.warning("Do not enter personal information or credentials on this site.")
     else:
-        st.markdown(f"""
-        <div class="result-safe">
-            <h3>✅ Likely LEGITIMATE website</h3>
-            <p>Predicted phishing probability: <b>{proba:.1%}</b></p>
-            {gauge_html}
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="result-safe">'
+            f'<h3>✅ Likely LEGITIMATE website</h3>'
+            f'<p>Predicted phishing probability: <b>{proba:.1%}</b></p>'
+            f'{gauge_html}'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
         st.success("No strong phishing indicators detected.")
 
     with st.expander("See the exact feature values sent to the model"):
