@@ -1,22 +1,4 @@
-"""
-app.py
--------
-STEP 11: WEB INTERFACE (Streamlit)
 
-A clean, modern, single-page interface where a user can:
-  - Enter the characteristics of a URL/website (or use the quick "Analyze a
-    URL string" helper which auto-fills a few fields from the URL text), and
-  - Instantly see whether the model predicts "Phishing" or "Legitimate",
-    along with a confidence/probability score.
-
-Run with:
-    streamlit run app.py
-
-Requires that phishing_detection.py has already been run once, so that
-these files exist in the same folder:
-    random_forest_model.pkl, logistic_regression_model.pkl,
-    scaler.pkl, feature_names.pkl
-"""
 
 import re
 import joblib
