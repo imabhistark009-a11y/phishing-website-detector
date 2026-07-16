@@ -1,6 +1,5 @@
 
 
-import re
 import joblib
 import numpy as np
 import pandas as pd
@@ -30,80 +29,175 @@ def load_artifacts():
 rf_model, lr_model, scaler, FEATURES = load_artifacts()
 
 # ---------------------------------------------------------------------
-# CUSTOM STYLING
+# CUSTOM STYLING — "URL forensics scanner" visual identity
 # ---------------------------------------------------------------------
 st.markdown("""
 <style>
-    .main { padding-top: 1rem; }
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
-    /* Hero header banner */
-    .hero {
-        background: linear-gradient(135deg, #1f2a44 0%, #2c3e50 100%);
-        border-radius: 14px;
-        padding: 1.6rem 1.8rem;
-        margin-bottom: 1.2rem;
-        border: 1px solid rgba(255,255,255,0.08);
-    }
-    .hero h1 { color: #ffffff !important; margin: 0 0 0.3rem 0; font-size: 1.9rem; }
-    .hero p { color: #b8c4d4 !important; margin: 0; font-size: 0.95rem; }
+:root {
+    --ink: #0A0E17;
+    --panel: #121926;
+    --line: #223047;
+    --signal: #2DD4BF;
+    --safe: #34D399;
+    --danger: #F43F5E;
+    --text: #E5EDF5;
+    --muted: #8393AB;
+}
 
-    /* Section labels */
-    .section-label {
-        font-weight: 700; font-size: 1.05rem; margin: 1.2rem 0 0.4rem 0;
-        color: inherit;
-    }
+.main { padding-top: 1rem; }
+body, p, span, div, label { font-family: 'Inter', sans-serif; }
+h1, h2, h3 { font-family: 'Space Grotesk', sans-serif !important; }
 
-    /* Result cards — text color fixed explicitly so it stays readable
-       regardless of Streamlit's light/dark theme */
-    .result-safe {
-        background-color: #e8f8ee; border-left: 6px solid #2ecc71;
-        padding: 1.1rem 1.4rem; border-radius: 10px; margin-top: 1rem;
-        color: #14532d !important;
-    }
-    .result-safe h3, .result-safe p { color: #14532d !important; margin: 0.2rem 0; }
+/* ---------- Hero header with animated scan-line ---------- */
+.hero {
+    background: linear-gradient(180deg, var(--panel) 0%, #0d1420 100%);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1.6rem 1.8rem 1.3rem 1.8rem;
+    margin-bottom: 1.4rem;
+    position: relative;
+    overflow: hidden;
+}
+.hero-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 46px; height: 46px; border-radius: 12px;
+    background: rgba(45, 212, 191, 0.12);
+    border: 1px solid rgba(45, 212, 191, 0.35);
+    font-size: 1.5rem; margin-bottom: 0.8rem;
+}
+.hero h1 {
+    color: var(--text) !important; margin: 0 0 0.35rem 0;
+    font-size: 1.7rem; font-weight: 700; letter-spacing: -0.02em;
+}
+.hero p { color: var(--muted) !important; margin: 0; font-size: 0.92rem; line-height: 1.5; }
+.scan-line {
+    position: absolute; bottom: 0; left: 0; height: 2px; width: 40%;
+    background: linear-gradient(90deg, transparent, var(--signal), transparent);
+    animation: sweep 3.2s ease-in-out infinite;
+}
+@keyframes sweep {
+    0%   { left: -40%; }
+    100% { left: 100%; }
+}
 
-    .result-danger {
-        background-color: #fdecea; border-left: 6px solid #e74c3c;
-        padding: 1.1rem 1.4rem; border-radius: 10px; margin-top: 1rem;
-        color: #7f1d1d !important;
-    }
-    .result-danger h3, .result-danger p { color: #7f1d1d !important; margin: 0.2rem 0; }
+/* ---------- Section headers ---------- */
+.section-label {
+    display: flex; align-items: center; gap: 0.55rem;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+    font-size: 1rem; letter-spacing: 0.01em;
+    margin: 1.4rem 0 0.6rem 0; color: var(--text);
+}
+.section-label .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 7px;
+    background: rgba(45, 212, 191, 0.15); color: var(--signal);
+    font-size: 0.8rem; font-family: 'JetBrains Mono', monospace; font-weight: 700;
+}
 
-    /* Probability gauge bar */
-    .gauge-track {
-        background-color: rgba(120,120,120,0.25); border-radius: 20px;
-        height: 14px; width: 100%; margin: 0.6rem 0 0.2rem 0; overflow: hidden;
-    }
-    .gauge-fill {
-        height: 100%; border-radius: 20px;
-        transition: width 0.4s ease-in-out;
-    }
+/* ---------- Expander cards ---------- */
+div[data-testid="stExpander"] {
+    border: 1px solid var(--line) !important;
+    border-radius: 12px !important;
+    background: var(--panel) !important;
+    overflow: hidden;
+}
 
-    .stButton>button {
-        width: 100%; border-radius: 8px; height: 3em;
-        font-weight: 600; background-color: #2c3e50; color: white;
-        border: none;
-    }
-    .stButton>button:hover { background-color: #34495e; color: white; }
+/* ---------- Result verdict cards ---------- */
+.result-safe {
+    background: rgba(52, 211, 153, 0.08); border: 1px solid rgba(52, 211, 153, 0.35);
+    border-left: 4px solid var(--safe);
+    padding: 1.3rem 1.5rem; border-radius: 12px; margin-top: 1rem;
+}
+.result-safe h3 { color: var(--safe) !important; margin: 0 0 0.3rem 0; font-size: 1.25rem; }
+.result-safe p { color: var(--text) !important; margin: 0; }
+
+.result-danger {
+    background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.35);
+    border-left: 4px solid var(--danger);
+    padding: 1.3rem 1.5rem; border-radius: 12px; margin-top: 1rem;
+}
+.result-danger h3 { color: var(--danger) !important; margin: 0 0 0.3rem 0; font-size: 1.25rem; }
+.result-danger p { color: var(--text) !important; margin: 0; }
+
+/* ---------- Radial threat-level dial (signature element) ---------- */
+.threat-dial-wrap { display: flex; align-items: center; gap: 1.6rem; margin-top: 0.9rem; }
+.threat-dial {
+    width: 110px; height: 110px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.threat-dial-inner {
+    width: 84px; height: 84px; border-radius: 50%;
+    background: var(--ink);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.threat-dial-pct {
+    font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 1.3rem;
+    color: var(--text); line-height: 1;
+}
+.threat-dial-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.55rem;
+    color: var(--muted); letter-spacing: 0.05em; margin-top: 0.2rem;
+}
+.threat-meta { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--muted); }
+.threat-meta b { color: var(--text); }
+
+/* ---------- Red-flag chips ---------- */
+.chip-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
+.chip {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.35rem 0.8rem; border-radius: 999px; font-size: 0.82rem;
+    font-family: 'Inter', sans-serif;
+}
+.chip-danger { background: rgba(244, 63, 94, 0.12); border: 1px solid rgba(244, 63, 94, 0.4); color: #FCA5B1; }
+.chip-safe { background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.4); color: #6EE7B7; }
+
+/* ---------- Buttons ---------- */
+.stButton>button {
+    width: 100%; border-radius: 10px; height: 3.1em;
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1rem;
+    letter-spacing: 0.01em;
+    background: linear-gradient(135deg, #2DD4BF 0%, #14B8A6 100%);
+    color: #05201C; border: none;
+    transition: filter 0.15s ease;
+}
+.stButton>button:hover { filter: brightness(1.08); color: #05201C; }
+
+/* ---------- Sidebar ---------- */
+section[data-testid="stSidebar"] {
+    background: var(--panel);
+    border-right: 1px solid var(--line);
+}
+.sidebar-title {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.95rem;
+    color: var(--text); margin: 0.4rem 0 0.6rem 0;
+    text-transform: uppercase; letter-spacing: 0.06em;
+}
 </style>
 """, unsafe_allow_html=True)
 
 st.markdown("""
 <div class="hero">
-    <h1>🛡️ Phishing Website Detector</h1>
-    <p>Machine Learning based classifier — enter website characteristics below and get an instant Phishing / Legitimate prediction.</p>
+    <div class="hero-badge">🛡️</div>
+    <h1>Phishing Website Detector</h1>
+    <p>URL forensics scanner — enter website signals below and get an instant Phishing / Legitimate verdict, backed by a trained ML classifier.</p>
+    <div class="scan-line"></div>
 </div>
 """, unsafe_allow_html=True)
 
+st.sidebar.markdown('<div class="sidebar-title">Model</div>', unsafe_allow_html=True)
 model_choice = st.sidebar.radio(
     "Choose model",
     ["Random Forest", "Logistic Regression"],
-    help="Both were trained on the same dataset; compare their predictions."
+    help="Both were trained on the same dataset; compare their predictions.",
+    label_visibility="collapsed",
 )
 model = rf_model if model_choice == "Random Forest" else lr_model
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("**About**")
+st.sidebar.markdown('<div class="sidebar-title">About</div>', unsafe_allow_html=True)
 st.sidebar.info(
     "This tool predicts whether a website is likely **Phishing** or "
     "**Legitimate** using real URL, domain-trust, and DNS-based features "
@@ -114,10 +208,11 @@ st.sidebar.info(
 # ---------------------------------------------------------------------
 # QUICK HELPER: auto-fill a couple of fields from a pasted URL string
 # ---------------------------------------------------------------------
-st.markdown('<div class="section-label">1️⃣ Quick URL scan (optional)</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-label"><span class="badge">1</span> Quick URL scan (optional)</div>', unsafe_allow_html=True)
 url_input = st.text_input(
     "Paste a URL here to auto-fill some fields below",
-    placeholder="e.g. http://192.168.1.1/secure-login@paypal.com"
+    placeholder="e.g. http://192.168.1.1/secure-login@paypal.com",
+    label_visibility="collapsed",
 )
 
 auto_url_length = len(url_input) if url_input else 40
@@ -136,9 +231,9 @@ if url_input:
         f"Has '-' in domain: {'Yes' if auto_has_hyphen else 'No'}"
     )
 
-st.markdown('<div class="section-label">2️⃣ Website / URL characteristics</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-label"><span class="badge">2</span> Website / URL characteristics</div>', unsafe_allow_html=True)
 
-with st.expander("🔗 URL & domain structure", expanded=True):
+with st.expander("🔗  URL & domain structure", expanded=True):
     col1, col2 = st.columns(2)
     with col1:
         url_length = st.slider("URL Length (characters)", 5, 250, int(auto_url_length))
@@ -155,7 +250,7 @@ with st.expander("🔗 URL & domain structure", expanded=True):
         has_email = st.selectbox("Contains an email address in the URL?",
                                   ["No", "Yes"], index=0)
 
-with st.expander("🔒 Certificate & DNS trust signals", expanded=True):
+with st.expander("🔒  Certificate & DNS trust signals", expanded=True):
     col3, col4 = st.columns(2)
     with col3:
         https_valid = st.selectbox("Valid HTTPS with trusted certificate?",
@@ -166,10 +261,10 @@ with st.expander("🔒 Certificate & DNS trust signals", expanded=True):
         has_dns = st.selectbox("Domain has valid DNS nameservers?", ["No", "Yes"], index=1)
         num_mx = st.slider("Number of mail servers (MX records)", 0, 10, 2)
 
-with st.expander("🌐 Domain age & network behaviour", expanded=True):
+with st.expander("🌐  Domain age & network behaviour", expanded=True):
     col5, col6 = st.columns(2)
     with col5:
-        domain_age_days = st.slider("Domain age (days since registration)", 0, 8000, 365)
+        domain_age_days = st.slider("Domain age (days since registration)", 0, 10000, 365)
         domain_expiry_days = st.slider("Days until domain registration expires", 0, 3000, 200)
         ttl_hostname = st.slider("Hostname DNS TTL (seconds)", 0, 70000, 3600)
     with col6:
@@ -205,7 +300,7 @@ input_dict = {
 
 st.markdown("---")
 
-if st.button("🔍 Predict"):
+if st.button("🔍  Run Scan"):
     input_df = pd.DataFrame([input_dict], columns=FEATURES)
     input_scaled = pd.DataFrame(scaler.transform(input_df), columns=FEATURES)
 
@@ -213,24 +308,29 @@ if st.button("🔍 Predict"):
     proba = model.predict_proba(input_scaled)[0][1]  # P(phishing)
 
     gauge_pct = round(proba * 100, 1)
-    # Gauge color scales from green (safe) to red (risky) based on probability
-    gauge_color = "#e74c3c" if proba >= 0.5 else "#2ecc71"
+    dial_color = "#F43F5E" if proba >= 0.5 else "#34D399"
+    sweep_deg = gauge_pct * 3.6  # 0-100% -> 0-360deg
 
-    # NOTE: no leading indentation on these lines -- Markdown treats 4+ leading
-    # spaces as a code block, which was causing stray closing tags (like
-    # "</div>") to render as literal visible text instead of real HTML.
-    gauge_html = (
-        f'<div class="gauge-track">'
-        f'<div class="gauge-fill" style="width:{gauge_pct}%; background-color:{gauge_color};"></div>'
+    # Radial dial built with a conic-gradient — no leading indentation on
+    # these lines (Markdown treats 4+ leading spaces as a code block,
+    # which causes stray closing tags to render as literal visible text).
+    dial_html = (
+        f'<div class="threat-dial-wrap">'
+        f'<div class="threat-dial" style="background: conic-gradient({dial_color} {sweep_deg}deg, #1a2332 {sweep_deg}deg);">'
+        f'<div class="threat-dial-inner">'
+        f'<div class="threat-dial-pct">{gauge_pct:.0f}%</div>'
+        f'<div class="threat-dial-label">RISK</div>'
+        f'</div></div>'
+        f'<div class="threat-meta">Model: <b>{model_choice}</b><br>Phishing probability: <b>{proba:.1%}</b><br>Legitimate probability: <b>{1 - proba:.1%}</b></div>'
         f'</div>'
     )
 
     if prediction == 1:
         st.markdown(
             f'<div class="result-danger">'
-            f'<h3>⚠️ Likely PHISHING website</h3>'
-            f'<p>Predicted phishing probability: <b>{proba:.1%}</b></p>'
-            f'{gauge_html}'
+            f'<h3>⚠️  Likely PHISHING website</h3>'
+            f'<p>This URL shows structural patterns consistent with phishing attempts.</p>'
+            f'{dial_html}'
             f'</div>',
             unsafe_allow_html=True,
         )
@@ -238,13 +338,13 @@ if st.button("🔍 Predict"):
     else:
         st.markdown(
             f'<div class="result-safe">'
-            f'<h3>✅ Likely LEGITIMATE website</h3>'
-            f'<p>Predicted phishing probability: <b>{proba:.1%}</b></p>'
-            f'{gauge_html}'
+            f'<h3>✅  Likely LEGITIMATE website</h3>'
+            f'<p>No strong phishing indicators detected in this input.</p>'
+            f'{dial_html}'
             f'</div>',
             unsafe_allow_html=True,
         )
-        st.success("No strong phishing indicators detected.")
+        st.success("This site's signals align with typical legitimate websites.")
 
     with st.expander("See the exact feature values sent to the model"):
         st.dataframe(input_df.T.rename(columns={0: "Value"}))
@@ -253,32 +353,35 @@ if st.button("🔍 Predict"):
     # RED-FLAG CHECKLIST — simple rule-based explanation, independent of
     # the model, so a viewer instantly sees *which* raw signals looked risky
     # -----------------------------------------------------------------
-    st.markdown("#### 🚩 Red flags detected in this input")
+    st.markdown('<div class="section-label"><span class="badge">🚩</span> Signals detected in this input</div>', unsafe_allow_html=True)
     flags = [
-        (input_dict["Having_At_Symbol"] == 1, "URL contains an '@' symbol"),
-        (input_dict["Having_Hyphen_In_Domain"] == 1, "Domain contains a '-' (prefix/suffix trick)"),
-        (input_dict["Num_Dots_In_Domain"] >= 3, "Domain has 3 or more dots (many subdomains)"),
-        (input_dict["Is_Shortened_URL"] == 1, "URL uses a shortening service"),
-        (input_dict["Has_Email_In_URL"] == 1, "URL contains an email address"),
-        (input_dict["Has_Valid_SSL"] == 0, "No valid HTTPS / trusted certificate"),
-        (input_dict["Has_SPF_Record"] == 0, "No SPF (anti-spoofing) record found"),
-        (input_dict["Has_DNS_Nameservers"] == 0, "No valid DNS nameservers found"),
-        (input_dict["Domain_Age_Days"] < 180, "Domain is less than 6 months old"),
-        (input_dict["Num_Redirects"] >= 3, "URL has 3 or more redirects"),
+        (input_dict["Having_At_Symbol"] == 1, "Contains '@' symbol"),
+        (input_dict["Having_Hyphen_In_Domain"] == 1, "Hyphen in domain"),
+        (input_dict["Num_Dots_In_Domain"] >= 3, "3+ dots in domain"),
+        (input_dict["Is_Shortened_URL"] == 1, "URL shortener used"),
+        (input_dict["Has_Email_In_URL"] == 1, "Email address in URL"),
+        (input_dict["Has_Valid_SSL"] == 0, "No valid HTTPS"),
+        (input_dict["Has_SPF_Record"] == 0, "No SPF record"),
+        (input_dict["Has_DNS_Nameservers"] == 0, "No DNS nameservers"),
+        (input_dict["Domain_Age_Days"] < 180, "Domain < 6 months old"),
+        (input_dict["Num_Redirects"] >= 3, "3+ redirects"),
     ]
     triggered = [msg for cond, msg in flags if cond]
+    clean = [msg for cond, msg in flags if not cond]
 
-    if triggered:
-        for msg in triggered:
-            st.markdown(f"- 🔴 {msg}")
-    else:
-        st.markdown("- 🟢 No common red flags triggered")
+    chip_html = '<div class="chip-row">'
+    for msg in triggered:
+        chip_html += f'<span class="chip chip-danger">⚠ {msg}</span>'
+    for msg in clean:
+        chip_html += f'<span class="chip chip-safe">✓ {msg}</span>'
+    chip_html += '</div>'
+    st.markdown(chip_html, unsafe_allow_html=True)
 
     # -----------------------------------------------------------------
     # FEATURE IMPORTANCE — shows which features the MODEL globally relies
     # on most, for interpretability during the viva
     # -----------------------------------------------------------------
-    st.markdown("#### 📊 What the model weighs most heavily (overall)")
+    st.markdown('<div class="section-label"><span class="badge">📊</span> What the model weighs most heavily</div>', unsafe_allow_html=True)
     if model_choice == "Random Forest":
         importances = pd.Series(model.feature_importances_, index=FEATURES)
     else:
